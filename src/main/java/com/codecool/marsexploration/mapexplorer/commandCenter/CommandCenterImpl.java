@@ -7,12 +7,13 @@ import java.util.List;
 
 public class CommandCenterImpl implements CommandCenter {
     private int id;
+    private String name;
     private Coordinate location;
     private int status;
     private HashMap<String, List<Coordinate>> resourcesOnStock;
 
     public CommandCenterImpl(int id, Coordinate location, int status, HashMap<String, List<Coordinate>> resourcesOnStock) {
-        this.id = id;
+        this.name = "Command Center-"+ id;
         this.location = location;
         this.status = status;
         this.resourcesOnStock = resourcesOnStock;
@@ -24,6 +25,10 @@ public class CommandCenterImpl implements CommandCenter {
 
     public void setId(int id) {
         this.id = id;
+    }
+    @Override
+    public String getName(){
+       return name;
     }
 
     @Override

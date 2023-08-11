@@ -36,7 +36,7 @@ public class ExplorationSimulator {
     public void startExploring() {
         Logger consoleLogger = new ConsoleLogger();
         String dbFile = "src/main/resources/ResourcesMars.db";
-        DatabaseManager databaseManager = new DatabaseManager(dbFile,consoleLogger);
+        DatabaseManager databaseManager = new DatabaseManager(dbFile, consoleLogger);
         fileLogger.clearLogFile();
         Map<MarsRover, List<Coordinate>> visitedCoordinate = new HashMap<>();
         for (int i = 0; i < simulationContext.getTimeoutSteps(); i++) {
@@ -54,7 +54,7 @@ public class ExplorationSimulator {
                     if (simulationContext.getCommandCenterMap().get(rover).getStatus() >= 10) {
                         simulationContext.setExplorationOutcome(rover, ExplorationOutcome.EXTRACTIONS);
                         databaseManager.addRover(rover.getName(), simulationContext.getNumberOfSteps(), rover.getResources().toString(), simulationContext.getExplorationOutcome().get(rover).toString());
-databaseManager.addConstructionEvent(rover.getId(),"Command Center", rover.getResources().size(), rover.getName(), simulationContext.getNumberOfSteps());
+                        databaseManager.addConstructionEvent(simulationContext.getCommandCenterMap().get(rover).getName(), simulationContext.getCommandCenterMap().get(rover).getStatus() + "/10", rover.getName(), simulationContext.getNumberOfSteps());
                         continue;
                     }
                     simulationContext.getCommandCenterMap().get(rover).incrementStatus();
@@ -63,6 +63,7 @@ databaseManager.addConstructionEvent(rover.getId(),"Command Center", rover.getRe
                     fileLogger.logInfo("STEP " + simulationContext.getNumberOfSteps() + "STATUS " + status + "/10 " + "; EVENT " + simulationContext.getExplorationOutcome().get(rover) + "; UNIT " + rover.getNamed() + "; POSITION [" + rover.getCurrentPosition().X() + "," + rover.getCurrentPosition().Y() + "]");
                     fileLogger.logInfo("OUTCOME " + simulationContext.getExplorationOutcome().get(rover) + " for " + rover.getName());
                     databaseManager.addRover(rover.getName(), simulationContext.getNumberOfSteps(), rover.getResources().toString(), simulationContext.getExplorationOutcome().get(rover).toString());
+                    databaseManager.addConstructionEvent(simulationContext.getCommandCenterMap().get(rover).getName(), simulationContext.getCommandCenterMap().get(rover).getStatus() + "/10", rover.getName(), simulationContext.getNumberOfSteps());
 
                     continue;
                 }

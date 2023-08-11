@@ -29,20 +29,19 @@ public class DatabaseManager {
 
     private void createTables() {
         String roversTableSQL = "CREATE TABLE IF NOT EXISTS Rovers (" +
-                "id INTEGER PRIMARY KEY AUTOINCREMENT," +
+                "id INTEGER PRIMARY KEY," +
                 "name TEXT NOT NULL," +
                 "extractedResources INTEGER NOT NULL)";
 
         String commandCentersTableSQL = "CREATE TABLE IF NOT EXISTS CommandCenters (" +
-                "id INTEGER PRIMARY KEY AUTOINCREMENT," +
+                "id INTEGER PRIMARY KEY," +
                 "name TEXT NOT NULL," +
                 "deliveredResources INTEGER NOT NULL," +
                 "currentStock INTEGER NOT NULL)";
 
         String constructionsTableSQL = "CREATE TABLE IF NOT EXISTS Constructions (" +
-                "id INTEGER PRIMARY KEY AUTOINCREMENT," +
                 "name TEXT NOT NULL," +
-                "resourcesUsed TEXT NOT NULL," +
+                "progress TEXT NOT NULL," +
                 "responsibleUnit TEXT NOT NULL," +
                 "step INTEGER NOT NULL)";
 
@@ -115,16 +114,15 @@ public class DatabaseManager {
         }
     }
 
-    public void addConstructionEvent(Integer id, String name, int resourcesUsed, String responsibleUnit, int step) {
-        String sql = "INSERT INTO Constructions (id, name, resourcesUsed, responsibleUnit, step) VALUES(?,?,?,?,?)";
+    public void addConstructionEvent( String name, String progress, String responsibleUnit, int step) {
+        String sql = "INSERT INTO Constructions (name, progress, responsibleUnit, step) VALUES(?,?,?,?)";
         try (Connection conn = getConnection()) {
             assert conn != null;
             try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
-                pstmt.setInt(1, id);
-                pstmt.setString(2, name);
-                pstmt.setInt(3, resourcesUsed);
-                pstmt.setString(4, responsibleUnit); // Set responsibleUnit here
-                pstmt.setInt(5, step);
+                pstmt.setString(1, name);
+                pstmt.setString(2, progress);
+                pstmt.setString(3, responsibleUnit); // Set responsibleUnit here
+                pstmt.setInt(4, step);
                 pstmt.executeUpdate();
             }
         } catch (SQLException e) {
