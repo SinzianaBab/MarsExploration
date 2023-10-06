@@ -15,10 +15,6 @@ public class MarsRover {
 
     private static int counter = 0;
 
-    public int getSight() {
-        return sight;
-    }
-
     public HashMap<String, List<Coordinate>> getResources() {
         return resources;
     }
@@ -31,24 +27,8 @@ public class MarsRover {
         return id;
     }
 
-    public void setId(int id) {
-        this.id = id;
-    }
-
     public String getName() {
         return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    public static int getCounter() {
-        return counter;
-    }
-
-    public static void setCounter(int counter) {
-        MarsRover.counter = counter;
     }
 
     public MarsRover(Coordinate currentPosition, int sight, HashMap<String, List<Coordinate>> resources) {
@@ -58,10 +38,6 @@ public class MarsRover {
         this.currentPosition = currentPosition;
         this.sight = sight;
         this.resources = resources;
-    }
-
-    public String getNamed() {
-        return name;
     }
 
     public Coordinate getCurrentPosition() {

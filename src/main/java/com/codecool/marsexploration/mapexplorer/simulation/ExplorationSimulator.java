@@ -1,9 +1,10 @@
 package com.codecool.marsexploration.mapexplorer.simulation;
 
+import com.codecool.marsexploration.mapexplorer.commandCenter.CommandCenter;
 import com.codecool.marsexploration.mapexplorer.commandCenter.CommandCenterImpl;
 import com.codecool.marsexploration.mapexplorer.configuration.ConfigurationValidator;
 import com.codecool.marsexploration.mapexplorer.configuration.model.Configuration;
-import com.codecool.marsexploration.mapexplorer.database.DatabaseManager;
+import com.codecool.marsexploration.mapexplorer.database.DatabaseManagerImpl;
 import com.codecool.marsexploration.mapexplorer.exploration.ExplorationOutcome;
 import com.codecool.marsexploration.mapexplorer.logger.ConsoleLogger;
 import com.codecool.marsexploration.mapexplorer.logger.FileLogger;
@@ -36,52 +37,51 @@ public class ExplorationSimulator {
     public void startExploring() {
         Logger consoleLogger = new ConsoleLogger();
         String dbFile = "src/main/resources/ResourcesMars.db";
-        DatabaseManager databaseManager = new DatabaseManager(dbFile,consoleLogger);
+        DatabaseManagerImpl databaseManagerImpl = new DatabaseManagerImpl(dbFile, consoleLogger);
         fileLogger.clearLogFile();
         Map<MarsRover, List<Coordinate>> visitedCoordinate = new HashMap<>();
         for (int i = 0; i < simulationContext.getTimeoutSteps(); i++) {
             for (MarsRover rover : simulationContext.getRover()) {
-                if (simulationContext.getExplorationOutcome().get(rover) == ExplorationOutcome.COLONIZABLE) {
-                    fileLogger.logInfo("STEP " + simulationContext.getNumberOfSteps() + "; EVENT " + simulationContext.getExplorationOutcome().get(rover) + "; UNIT " + rover.getNamed() + "; POSITION [" + rover.getCurrentPosition().X() + "," + rover.getCurrentPosition().Y() + "]");
-                    fileLogger.logInfo("OUTCOME " + simulationContext.getExplorationOutcome().get(rover) + " for " + rover.getName());
-                    databaseManager.addRover(rover.getName(), simulationContext.getNumberOfSteps(), rover.getResources().toString(), simulationContext.getExplorationOutcome().get(rover).toString());
-                    simulationContext.setExplorationOutcome(rover, ExplorationOutcome.CONSTRUCTION);
-                    simulationContext.setCommandCenterMap(rover, new CommandCenterImpl(rover.getId(), rover.getCurrentPosition(), 0, rover.getResources()));
-                    rover.setResources(new HashMap<>());
-                    continue;
-                }
-                if (simulationContext.getExplorationOutcome().get(rover) == ExplorationOutcome.CONSTRUCTION) {
-                    if (simulationContext.getCommandCenterMap().get(rover).getStatus() >= 10) {
-                        simulationContext.setExplorationOutcome(rover, ExplorationOutcome.EXTRACTIONS);
-                        databaseManager.addRover(rover.getName(), simulationContext.getNumberOfSteps(), rover.getResources().toString(), simulationContext.getExplorationOutcome().get(rover).toString());
-databaseManager.addConstructionEvent(rover.getId(),"Command Center", rover.getResources().size(), rover.getName(), simulationContext.getNumberOfSteps());
-                        continue;
+                ExplorationOutcome simOutcomeRover = simulationContext.getExplorationOutcome().get(rover);
+                int simulationStep = simulationContext.getNumberOfSteps();
+                String roverName = rover.getName();
+                CommandCenter commandCenterRover = simulationContext.getCommandCenterMap().get(rover);
+                //todo: change if to switch and move to another method
+                if (simOutcomeRover != null) {
+                    switch (simOutcomeRover) {
+                        case COLONIZABLE:
+                            colonizationFaze(simulationStep, simOutcomeRover, roverName, rover, databaseManagerImpl);
+                            break;
+
+                        case CONSTRUCTION:
+                            if (commandCenterRover.getStatus() >= 10) {
+                                simulationContext.setExplorationOutcome(rover, ExplorationOutcome.EXTRACTIONS);
+                                databaseManagerImpl.addRover(roverName, simulationStep, rover.getResources().toString(), simOutcomeRover.toString());
+                                databaseManagerImpl.addConstructionEvent(commandCenterRover.getName(), commandCenterRover.getStatus() + "/10", roverName, simulationStep);
+                                continue;
+                            }
+                            constructionFaze(commandCenterRover, rover, simulationStep, simOutcomeRover, roverName, databaseManagerImpl);
+                            break;
+
+                        case EXTRACTIONS:
+//                            fileLogger.logInfo("STEP " + simulationStep + "; EVENT " + simOutcomeRover + "; UNIT " + roverName + "; POSITION [" + rover.getCurrentPosition().X() + "," + rover.getCurrentPosition().Y() + "]");
+//                            fileLogger.logInfo("OUTCOME " + simOutcomeRover + " for " + roverName);
+//                            databaseManager.addRover(roverName, simulationStep, rover.getResources().toString(), simOutcomeRover.toString());
+                            System.out.println(simOutcomeRover);
+                            extractionFaze(simulationStep, simOutcomeRover, rover, roverName, databaseManagerImpl);
+
+                        case DONE_EXTRACTION:
+                            fileLogger.logInfo("STEP " + simulationStep + "; EVENT " + simOutcomeRover + "; UNIT " + roverName + "; POSITION [" + rover.getCurrentPosition().X() + "," + rover.getCurrentPosition().Y() + "]");
+                            fileLogger.logInfo("OUTCOME " + simOutcomeRover + " for " + roverName);
+                            rover.setCurrentPosition(commandCenterRover.getLocation());
+                            simulationContext.setExplorationOutcome(rover, ExplorationOutcome.EXTRACTIONS);
+                            commandCenterRover.setResourcesOnStock(rover.getResources());
+                            rover.setResources(new HashMap<>());
+                            databaseManagerImpl.addRover(roverName, simulationStep, rover.getResources().toString(), simOutcomeRover.toString());
+                            break;
                     }
-                    simulationContext.getCommandCenterMap().get(rover).incrementStatus();
-                    simulationContext.getCommandCenterMap().get(rover).setResourcesOnStock(rover.getResources());
-                    int status = simulationContext.getCommandCenterMap().get(rover).getStatus();
-                    fileLogger.logInfo("STEP " + simulationContext.getNumberOfSteps() + "STATUS " + status + "/10 " + "; EVENT " + simulationContext.getExplorationOutcome().get(rover) + "; UNIT " + rover.getNamed() + "; POSITION [" + rover.getCurrentPosition().X() + "," + rover.getCurrentPosition().Y() + "]");
-                    fileLogger.logInfo("OUTCOME " + simulationContext.getExplorationOutcome().get(rover) + " for " + rover.getName());
-                    databaseManager.addRover(rover.getName(), simulationContext.getNumberOfSteps(), rover.getResources().toString(), simulationContext.getExplorationOutcome().get(rover).toString());
-
-                    continue;
-                }
-                if (simulationContext.getExplorationOutcome().get(rover) == ExplorationOutcome.EXTRACTIONS) {
-                    fileLogger.logInfo("STEP " + simulationContext.getNumberOfSteps() + "; EVENT " + simulationContext.getExplorationOutcome().get(rover) + "; UNIT " + rover.getNamed() + "; POSITION [" + rover.getCurrentPosition().X() + "," + rover.getCurrentPosition().Y() + "]");
-                    fileLogger.logInfo("OUTCOME " + simulationContext.getExplorationOutcome().get(rover) + " for " + rover.getName());
-                    databaseManager.addRover(rover.getName(), simulationContext.getNumberOfSteps(), rover.getResources().toString(), simulationContext.getExplorationOutcome().get(rover).toString());
-
-                }
-                if (simulationContext.getExplorationOutcome().get(rover) == ExplorationOutcome.DONE_EXTRACTION) {
-                    fileLogger.logInfo("STEP " + simulationContext.getNumberOfSteps() + "; EVENT " + simulationContext.getExplorationOutcome().get(rover) + "; UNIT " + rover.getNamed() + "; POSITION [" + rover.getCurrentPosition().X() + "," + rover.getCurrentPosition().Y() + "]");
-                    fileLogger.logInfo("OUTCOME " + simulationContext.getExplorationOutcome().get(rover) + " for " + rover.getName());
-                    rover.setCurrentPosition(simulationContext.getCommandCenterMap().get(rover).getLocation());
-                    simulationContext.setExplorationOutcome(rover, ExplorationOutcome.EXTRACTIONS);
-                    simulationContext.getCommandCenterMap().get(rover).setResourcesOnStock(rover.getResources());
-                    rover.setResources(new HashMap<>());
-                    databaseManager.addRover(rover.getName(), simulationContext.getNumberOfSteps(), rover.getResources().toString(), simulationContext.getExplorationOutcome().get(rover).toString());
-
-                    continue;
+                } else {
+                    simOutcomeRover = ExplorationOutcome.TIMEOUT;
                 }
                 roverTravelSteps(rover, visitedCoordinate);
             }
@@ -108,14 +108,14 @@ databaseManager.addConstructionEvent(rover.getId(),"Command Center", rover.getRe
             }
 
             if (simulationContext.getExplorationOutcome().get(rover) != ExplorationOutcome.EXTRACTIONS) {
-                fileLogger.logInfo("STEP " + simulationContext.getNumberOfSteps() + "; EVENT searching; UNIT " + rover.getNamed() + "; POSITION [" + roverPosition.X() + "," + roverPosition.Y() + "]");
+                fileLogger.logInfo("STEP " + simulationContext.getNumberOfSteps() + "; EVENT searching; UNIT " + rover.getName() + "; POSITION [" + roverPosition.X() + "," + roverPosition.Y() + "]");
                 fileLogger.logInfo("OUTCOME " + simulationContext.getExplorationOutcome().get(rover) + " for " + rover.getName());
                 isOutcomeReached(rover, simulationContext, configuration);
             } else {
                 if (rover.getResources().size() >= 3) {
                     simulationContext.setExplorationOutcome(rover, ExplorationOutcome.DONE_EXTRACTION);
                 }
-                fileLogger.logInfo("STEP " + simulationContext.getNumberOfSteps() + "; EVENT extraction; UNIT " + rover.getNamed() + "; POSITION [" + roverPosition.X() + "," + roverPosition.Y() + "]");
+                fileLogger.logInfo("STEP " + simulationContext.getNumberOfSteps() + "; EVENT extraction; UNIT " + rover.getName() + "; POSITION [" + roverPosition.X() + "," + roverPosition.Y() + "]");
                 fileLogger.logInfo("OUTCOME " + simulationContext.getExplorationOutcome().get(rover) + " for " + rover.getName());
             }
         }
@@ -150,4 +150,73 @@ databaseManager.addConstructionEvent(rover.getId(),"Command Center", rover.getRe
         return analyzers.stream()
                 .anyMatch(analyzer -> analyzer.hasReachedOutcome(rover, context, configuration));
     }
+
+    private void colonizationFaze(int simulationStep, ExplorationOutcome simOutcomeRover, String roverName, MarsRover rover, DatabaseManagerImpl databaseManagerImpl) {
+        fileLogger.logInfo("STEP " + simulationStep + "; EVENT " + simOutcomeRover + "; UNIT " + roverName + "; POSITION [" + rover.getCurrentPosition().X() + "," + rover.getCurrentPosition().Y() + "]");
+        fileLogger.logInfo("OUTCOME " + simOutcomeRover + " for " + roverName);
+        databaseManagerImpl.addRover(roverName, simulationStep, rover.getResources().toString(), simOutcomeRover.toString());
+        simulationContext.setExplorationOutcome(rover, ExplorationOutcome.CONSTRUCTION);
+        simulationContext.setCommandCenterMap(rover, new CommandCenterImpl(rover.getId(), rover.getCurrentPosition(), 0, rover.getResources()));
+        rover.setResources(new HashMap<>());
+    }
+
+    private void constructionFaze(CommandCenter commandCenterRover, MarsRover rover, int simulationStep, ExplorationOutcome simOutcomeRover, String roverName, DatabaseManagerImpl databaseManagerImpl) {
+        commandCenterRover.incrementStatus();
+        commandCenterRover.setResourcesOnStock(rover.getResources());
+        int status = commandCenterRover.getStatus();
+        fileLogger.logInfo("STEP " + simulationStep + "STATUS " + status + "/10 " + "; EVENT " + simOutcomeRover + "; UNIT " + roverName + "; POSITION [" + rover.getCurrentPosition().X() + "," + rover.getCurrentPosition().Y() + "]");
+        fileLogger.logInfo("OUTCOME " + simOutcomeRover + " for " + roverName);
+        databaseManagerImpl.addRover(roverName, simulationStep, rover.getResources().toString(), simOutcomeRover.toString());
+        databaseManagerImpl.addConstructionEvent(commandCenterRover.getName(), commandCenterRover.getStatus() + "/10", roverName, simulationStep);
+    }
+
+    private void extractionFaze(int simulationStep, ExplorationOutcome simOutcomeRover, MarsRover rover, String roverName, DatabaseManagerImpl databaseManagerImpl) {
+        fileLogger.logInfo("STEP " + simulationStep + "; EVENT " + simOutcomeRover + "; UNIT " + roverName + "; POSITION [" + rover.getCurrentPosition().X() + "," + rover.getCurrentPosition().Y() + "]");
+        fileLogger.logInfo("OUTCOME " + simOutcomeRover + " for " + roverName);
+        databaseManagerImpl.addRover(roverName, simulationStep, rover.getResources().toString(), simOutcomeRover.toString());
+    }
 }
+
+//string 1st line, string second line
+//                if (simOutcomeRover == ExplorationOutcome.COLONIZABLE) {
+//                    fileLogger.logInfo("STEP " + simulationContext.getNumberOfSteps() + "; EVENT " + simOutcomeRover + "; UNIT " + rover.getNamed() + "; POSITION [" + rover.getCurrentPosition().X() + "," + rover.getCurrentPosition().Y() + "]");
+//                    fileLogger.logInfo("OUTCOME " + simulationContext.getExplorationOutcome().get(rover) + " for " + rover.getName());
+//                    databaseManager.addRover(rover.getName(), simulationContext.getNumberOfSteps(), rover.getResources().toString(), simOutcomeRover.toString());
+//                    simulationContext.setExplorationOutcome(rover, ExplorationOutcome.CONSTRUCTION);
+//                    simulationContext.setCommandCenterMap(rover, new CommandCenterImpl(rover.getId(), rover.getCurrentPosition(), 0, rover.getResources()));
+//                    rover.setResources(new HashMap<>());
+//                    continue;
+//                }
+//                if (simOutcomeRover == ExplorationOutcome.CONSTRUCTION) {
+//                    if (simulationContext.getCommandCenterMap().get(rover).getStatus() >= 10) {
+//                        simulationContext.setExplorationOutcome(rover, ExplorationOutcome.EXTRACTIONS);
+//                        databaseManager.addRover(rover.getName(), simulationContext.getNumberOfSteps(), rover.getResources().toString(), simOutcomeRover.toString());
+//                        databaseManager.addConstructionEvent(simulationContext.getCommandCenterMap().get(rover).getName(), simulationContext.getCommandCenterMap().get(rover).getStatus() + "/10", rover.getName(), simulationContext.getNumberOfSteps());
+//                        continue;
+//                    }
+//                    simulationContext.getCommandCenterMap().get(rover).incrementStatus();
+//                    simulationContext.getCommandCenterMap().get(rover).setResourcesOnStock(rover.getResources());
+//                    int status = simulationContext.getCommandCenterMap().get(rover).getStatus();
+//                    fileLogger.logInfo("STEP " + simulationContext.getNumberOfSteps() + "STATUS " + status + "/10 " + "; EVENT " + simOutcomeRover + "; UNIT " + rover.getNamed() + "; POSITION [" + rover.getCurrentPosition().X() + "," + rover.getCurrentPosition().Y() + "]");
+//                    fileLogger.logInfo("OUTCOME " + simOutcomeRover + " for " + rover.getName());
+//                    databaseManager.addRover(rover.getName(), simulationContext.getNumberOfSteps(), rover.getResources().toString(), simulationContext.getExplorationOutcome().get(rover).toString());
+//                    databaseManager.addConstructionEvent(simulationContext.getCommandCenterMap().get(rover).getName(), simulationContext.getCommandCenterMap().get(rover).getStatus() + "/10", rover.getName(), simulationContext.getNumberOfSteps());
+//
+//                    continue;
+//                }
+//                if (simOutcomeRover == ExplorationOutcome.EXTRACTIONS) {
+//                    fileLogger.logInfo("STEP " + simulationContext.getNumberOfSteps() + "; EVENT " + simOutcomeRover + "; UNIT " + rover.getNamed() + "; POSITION [" + rover.getCurrentPosition().X() + "," + rover.getCurrentPosition().Y() + "]");
+//                    fileLogger.logInfo("OUTCOME " + simOutcomeRover + " for " + rover.getName());
+//                    databaseManager.addRover(rover.getName(), simulationContext.getNumberOfSteps(), rover.getResources().toString(), simOutcomeRover.toString());
+//                }
+//                if (simOutcomeRover == ExplorationOutcome.DONE_EXTRACTION) {
+//                    fileLogger.logInfo("STEP " + simulationContext.getNumberOfSteps() + "; EVENT " + simOutcomeRover + "; UNIT " + rover.getNamed() + "; POSITION [" + rover.getCurrentPosition().X() + "," + rover.getCurrentPosition().Y() + "]");
+//                    fileLogger.logInfo("OUTCOME " + simOutcomeRover + " for " + rover.getName());
+//                    rover.setCurrentPosition(simulationContext.getCommandCenterMap().get(rover).getLocation());
+//                    simulationContext.setExplorationOutcome(rover, ExplorationOutcome.EXTRACTIONS);
+//                    simulationContext.getCommandCenterMap().get(rover).setResourcesOnStock(rover.getResources());
+//                    rover.setResources(new HashMap<>());
+//                    databaseManager.addRover(rover.getName(), simulationContext.getNumberOfSteps(), rover.getResources().toString(), simOutcomeRover.toString());
+//
+//                    continue;
+//                }

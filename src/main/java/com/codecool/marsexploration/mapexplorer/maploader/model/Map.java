@@ -1,6 +1,6 @@
 package com.codecool.marsexploration.mapexplorer.maploader.model;
 
-public class Map {
+public class Map implements MapInterface {
     private String[][] representation;
     private boolean successfullyGenerated;
 
