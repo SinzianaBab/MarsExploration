@@ -3,9 +3,7 @@ package com.codecool.marsexploration.mapexplorer;
 import com.codecool.marsexploration.mapexplorer.commandCenter.CommandCenter;
 import com.codecool.marsexploration.mapexplorer.configuration.ConfigurationValidatorImpl;
 import com.codecool.marsexploration.mapexplorer.configuration.model.Configuration;
-import com.codecool.marsexploration.mapexplorer.database.DatabaseManager;
-import com.codecool.marsexploration.mapexplorer.database.Resources;
-import com.codecool.marsexploration.mapexplorer.database.ResourcesImpl;
+import com.codecool.marsexploration.mapexplorer.database.DatabaseManagerImpl;
 import com.codecool.marsexploration.mapexplorer.logger.ConsoleLogger;
 import com.codecool.marsexploration.mapexplorer.logger.FileLogger;
 import com.codecool.marsexploration.mapexplorer.logger.Logger;
@@ -29,11 +27,11 @@ public class Application {
         String dbFile = "src/main/resources/ResourcesMars.db";
 //        Resources resourcesDatabase = new ResourcesImpl(dbFile, consoleLogger);
 //        resourcesDatabase.deleteAll();
-        DatabaseManager databaseManager = new DatabaseManager(dbFile,consoleLogger);
+        DatabaseManagerImpl databaseManagerImpl = new DatabaseManagerImpl(dbFile, consoleLogger);
 
-        databaseManager.deleteAllRovers();
-        databaseManager.deleteAllCommandCenters();
-        databaseManager.deleteAllConstructions();
+        databaseManagerImpl.deleteAllRovers();
+        databaseManagerImpl.deleteAllCommandCenters();
+        databaseManagerImpl.deleteAllConstructions();
         Map<MarsRover, CommandCenter> commandCenterMap = new HashMap<>();
         for (int i = 0; i < 3; i++) {
             String mapFile = workDir + "/resources/exploration-" + i + ".map";
@@ -55,13 +53,11 @@ public class Application {
                 MarsRover rover3 = initializeRover.initializeRover(landingSpot, 2, resourcesRover3, mapConfiguration);
 
                 List<MarsRover> rovers = List.of(rover1, rover2, rover3);
-//todo lista de rover
 
                 SimulationContext simulationContext = new SimulationContext(0, 200, rovers, landingSpot, mapFile, monitoredResources, commandCenterMap);
                 FileLogger fileLogger = new FileLogger(workDir + "/resources/ResultsAfterExploration-" + i + ".map");
                 ExplorationSimulator explorationSimulator = new ExplorationSimulator(fileLogger, simulationContext, configurationValidator, mapConfiguration);
                 explorationSimulator.startExploring();
-//                databaseManager.addRover(rover1.getName(),simulationContext.getNumberOfSteps(), simulationContext.getMonitoredResources().toString(),simulationContext.getExplorationOutcome().toString());
                 consoleLogger.logInfo("File ResultsAfterExploration-" + i + ".map successful created.");
             } else {
                 FileLogger fileLogger = new FileLogger(workDir + "/resources/ResultsAfterExploration-" + i + ".map");

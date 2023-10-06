@@ -13,22 +13,15 @@ public class CommandCenterImpl implements CommandCenter {
     private HashMap<String, List<Coordinate>> resourcesOnStock;
 
     public CommandCenterImpl(int id, Coordinate location, int status, HashMap<String, List<Coordinate>> resourcesOnStock) {
-        this.name = "Command Center-"+ id;
+        this.name = "Command Center-" + id;
         this.location = location;
         this.status = status;
         this.resourcesOnStock = resourcesOnStock;
     }
 
-    public int getId() {
-        return id;
-    }
-
-    public void setId(int id) {
-        this.id = id;
-    }
     @Override
-    public String getName(){
-       return name;
+    public String getName() {
+        return name;
     }
 
     @Override
@@ -36,25 +29,10 @@ public class CommandCenterImpl implements CommandCenter {
         return location;
     }
 
-    public void setLocation(Coordinate location) {
-        this.location = location;
-    }
-
     @Override
     public int getStatus() {
         return status;
     }
-
-    @Override
-    public void setStatus(int status) {
-        this.status = status;
-    }
-
-    @Override
-    public HashMap<String, List<Coordinate>> getResourcesOnStock() {
-        return resourcesOnStock;
-    }
-
 
     @Override
     public void setResourcesOnStock(HashMap<String, List<Coordinate>> resourcesOnStock) {

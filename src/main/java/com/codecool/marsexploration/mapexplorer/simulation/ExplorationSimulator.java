@@ -4,7 +4,7 @@ import com.codecool.marsexploration.mapexplorer.commandCenter.CommandCenter;
 import com.codecool.marsexploration.mapexplorer.commandCenter.CommandCenterImpl;
 import com.codecool.marsexploration.mapexplorer.configuration.ConfigurationValidator;
 import com.codecool.marsexploration.mapexplorer.configuration.model.Configuration;
-import com.codecool.marsexploration.mapexplorer.database.DatabaseManager;
+import com.codecool.marsexploration.mapexplorer.database.DatabaseManagerImpl;
 import com.codecool.marsexploration.mapexplorer.exploration.ExplorationOutcome;
 import com.codecool.marsexploration.mapexplorer.logger.ConsoleLogger;
 import com.codecool.marsexploration.mapexplorer.logger.FileLogger;
@@ -37,7 +37,7 @@ public class ExplorationSimulator {
     public void startExploring() {
         Logger consoleLogger = new ConsoleLogger();
         String dbFile = "src/main/resources/ResourcesMars.db";
-        DatabaseManager databaseManager = new DatabaseManager(dbFile, consoleLogger);
+        DatabaseManagerImpl databaseManagerImpl = new DatabaseManagerImpl(dbFile, consoleLogger);
         fileLogger.clearLogFile();
         Map<MarsRover, List<Coordinate>> visitedCoordinate = new HashMap<>();
         for (int i = 0; i < simulationContext.getTimeoutSteps(); i++) {
@@ -50,24 +50,17 @@ public class ExplorationSimulator {
                 if (simOutcomeRover != null) {
                     switch (simOutcomeRover) {
                         case COLONIZABLE:
-                            colonizationFaze(simulationStep, simOutcomeRover, roverName, rover, databaseManager);
+                            colonizationFaze(simulationStep, simOutcomeRover, roverName, rover, databaseManagerImpl);
                             break;
 
                         case CONSTRUCTION:
                             if (commandCenterRover.getStatus() >= 10) {
                                 simulationContext.setExplorationOutcome(rover, ExplorationOutcome.EXTRACTIONS);
-                                databaseManager.addRover(roverName, simulationStep, rover.getResources().toString(), simOutcomeRover.toString());
-                                databaseManager.addConstructionEvent(commandCenterRover.getName(), commandCenterRover.getStatus() + "/10", roverName, simulationStep);
+                                databaseManagerImpl.addRover(roverName, simulationStep, rover.getResources().toString(), simOutcomeRover.toString());
+                                databaseManagerImpl.addConstructionEvent(commandCenterRover.getName(), commandCenterRover.getStatus() + "/10", roverName, simulationStep);
                                 continue;
                             }
-                            constructionFaze(commandCenterRover, rover, simulationStep, simOutcomeRover, roverName, databaseManager);
-//                            commandCenterRover.incrementStatus();
-//                            commandCenterRover.setResourcesOnStock(rover.getResources());
-//                            int status = commandCenterRover.getStatus();
-//                            fileLogger.logInfo("STEP " + simulationStep + "STATUS " + status + "/10 " + "; EVENT " + simOutcomeRover + "; UNIT " + roverName + "; POSITION [" + rover.getCurrentPosition().X() + "," + rover.getCurrentPosition().Y() + "]");
-//                            fileLogger.logInfo("OUTCOME " + simOutcomeRover + " for " + roverName);
-//                            databaseManager.addRover(roverName, simulationStep, rover.getResources().toString(), simOutcomeRover.toString());
-//                            databaseManager.addConstructionEvent(commandCenterRover.getName(), commandCenterRover.getStatus() + "/10", roverName, simulationStep);
+                            constructionFaze(commandCenterRover, rover, simulationStep, simOutcomeRover, roverName, databaseManagerImpl);
                             break;
 
                         case EXTRACTIONS:
@@ -75,7 +68,7 @@ public class ExplorationSimulator {
 //                            fileLogger.logInfo("OUTCOME " + simOutcomeRover + " for " + roverName);
 //                            databaseManager.addRover(roverName, simulationStep, rover.getResources().toString(), simOutcomeRover.toString());
                             System.out.println(simOutcomeRover);
-                            extractionFaze(simulationStep, simOutcomeRover, rover, roverName, databaseManager);
+                            extractionFaze(simulationStep, simOutcomeRover, rover, roverName, databaseManagerImpl);
 
                         case DONE_EXTRACTION:
                             fileLogger.logInfo("STEP " + simulationStep + "; EVENT " + simOutcomeRover + "; UNIT " + roverName + "; POSITION [" + rover.getCurrentPosition().X() + "," + rover.getCurrentPosition().Y() + "]");
@@ -84,7 +77,7 @@ public class ExplorationSimulator {
                             simulationContext.setExplorationOutcome(rover, ExplorationOutcome.EXTRACTIONS);
                             commandCenterRover.setResourcesOnStock(rover.getResources());
                             rover.setResources(new HashMap<>());
-                            databaseManager.addRover(roverName, simulationStep, rover.getResources().toString(), simOutcomeRover.toString());
+                            databaseManagerImpl.addRover(roverName, simulationStep, rover.getResources().toString(), simOutcomeRover.toString());
                             break;
                     }
                 } else {
@@ -158,29 +151,29 @@ public class ExplorationSimulator {
                 .anyMatch(analyzer -> analyzer.hasReachedOutcome(rover, context, configuration));
     }
 
-    private void colonizationFaze(int simulationStep, ExplorationOutcome simOutcomeRover, String roverName, MarsRover rover, DatabaseManager databaseManager) {
+    private void colonizationFaze(int simulationStep, ExplorationOutcome simOutcomeRover, String roverName, MarsRover rover, DatabaseManagerImpl databaseManagerImpl) {
         fileLogger.logInfo("STEP " + simulationStep + "; EVENT " + simOutcomeRover + "; UNIT " + roverName + "; POSITION [" + rover.getCurrentPosition().X() + "," + rover.getCurrentPosition().Y() + "]");
         fileLogger.logInfo("OUTCOME " + simOutcomeRover + " for " + roverName);
-        databaseManager.addRover(roverName, simulationStep, rover.getResources().toString(), simOutcomeRover.toString());
+        databaseManagerImpl.addRover(roverName, simulationStep, rover.getResources().toString(), simOutcomeRover.toString());
         simulationContext.setExplorationOutcome(rover, ExplorationOutcome.CONSTRUCTION);
         simulationContext.setCommandCenterMap(rover, new CommandCenterImpl(rover.getId(), rover.getCurrentPosition(), 0, rover.getResources()));
         rover.setResources(new HashMap<>());
     }
 
-    private void constructionFaze(CommandCenter commandCenterRover, MarsRover rover, int simulationStep, ExplorationOutcome simOutcomeRover, String roverName, DatabaseManager databaseManager) {
+    private void constructionFaze(CommandCenter commandCenterRover, MarsRover rover, int simulationStep, ExplorationOutcome simOutcomeRover, String roverName, DatabaseManagerImpl databaseManagerImpl) {
         commandCenterRover.incrementStatus();
         commandCenterRover.setResourcesOnStock(rover.getResources());
         int status = commandCenterRover.getStatus();
         fileLogger.logInfo("STEP " + simulationStep + "STATUS " + status + "/10 " + "; EVENT " + simOutcomeRover + "; UNIT " + roverName + "; POSITION [" + rover.getCurrentPosition().X() + "," + rover.getCurrentPosition().Y() + "]");
         fileLogger.logInfo("OUTCOME " + simOutcomeRover + " for " + roverName);
-        databaseManager.addRover(roverName, simulationStep, rover.getResources().toString(), simOutcomeRover.toString());
-        databaseManager.addConstructionEvent(commandCenterRover.getName(), commandCenterRover.getStatus() + "/10", roverName, simulationStep);
+        databaseManagerImpl.addRover(roverName, simulationStep, rover.getResources().toString(), simOutcomeRover.toString());
+        databaseManagerImpl.addConstructionEvent(commandCenterRover.getName(), commandCenterRover.getStatus() + "/10", roverName, simulationStep);
     }
 
-    private void extractionFaze(int simulationStep, ExplorationOutcome simOutcomeRover, MarsRover rover, String roverName, DatabaseManager databaseManager) {
+    private void extractionFaze(int simulationStep, ExplorationOutcome simOutcomeRover, MarsRover rover, String roverName, DatabaseManagerImpl databaseManagerImpl) {
         fileLogger.logInfo("STEP " + simulationStep + "; EVENT " + simOutcomeRover + "; UNIT " + roverName + "; POSITION [" + rover.getCurrentPosition().X() + "," + rover.getCurrentPosition().Y() + "]");
         fileLogger.logInfo("OUTCOME " + simOutcomeRover + " for " + roverName);
-        databaseManager.addRover(roverName, simulationStep, rover.getResources().toString(), simOutcomeRover.toString());
+        databaseManagerImpl.addRover(roverName, simulationStep, rover.getResources().toString(), simOutcomeRover.toString());
     }
 }
 

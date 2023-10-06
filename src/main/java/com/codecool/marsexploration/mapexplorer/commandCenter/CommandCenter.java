@@ -12,10 +12,6 @@ public interface CommandCenter {
 
     int getStatus();
 
-    void setStatus(int status);
-
-    HashMap<String, List<Coordinate>> getResourcesOnStock();
-
     void setResourcesOnStock(HashMap<String, List<Coordinate>> resourcesOnStock);
 
     void incrementStatus();
