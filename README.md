@@ -18,11 +18,17 @@ Open Application.java and click on Run 'Application.main()'
 This was a one week long project built during the 5th teamwork week from the third module of CodeCool Programming School. Project goals  included using technologies learned up until this point and familiarizing myself with documentation for new features.
 We wanted to build an application that simulates the mars rover exploration on Mars. Firstly, the spaceship lands on a random spot on the map if the spot is vacant. If it isn't vacant it throws an error. If it lands properly, the rover is deployed and starts gathering resources in order to build the Command Center. Three rovers are deployed from each spaceship on every map. The simulation sruns for three different maps at the same time and the outcome is saved in files under the resources package and in the database ResourcesMars.db.
 
-# Challenges
+## Challenges
 Debugging was the biggest challenge as the outcome was not giving the right result.
-# Lessons
+## Lessons
 I learned how to create multiple methods and connect multiple classes.
 
-# Technologies Used
+## Technologies Used
 Java,
 Maven.
+
+
+## Code Contributors:
+#### Silvia Lupsa: https://github.com/silvialupsa,
+#### Rares Butuc: https://github.com/RaresButuc,
+#### David Badarau: https://github.com/BadarauDavid.
